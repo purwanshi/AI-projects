@@ -1,0 +1,102 @@
+import gradio as gr
+from openai import OpenAI
+
+# Initialize Gemini client
+model = OpenAI(
+    api_key="******************",  # Replace with your real Gemini API key
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+)
+
+# Function to build and send the prompt
+def get_therapy_response(lover, hobbies, fav_food, indoor_outdoor, emotion, fav_flower):
+    user_prompt = f"""
+    The user is a {lover} lover.
+    In their free time, they enjoy {hobbies}.
+    They love eating or making {fav_food}.
+    They are generally an {indoor_outdoor} person.
+    Right now, they are feeling {emotion}.
+    Their favorite plant or flower is {fav_flower}.
+
+    Offer them 5 lovely, cozy, creative, and scientifically-backed mood-boosting suggestions that fit their mood and personality.
+    Keep each suggestion short (2–3 lines), kind, encouraging, and emotionally comforting.
+    """
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                 "You are a warm, thoughtful, and joyful AI therapist who helps people feel better with adorable, cozy, and scientifically-backed mood-boosting suggestions.\n\n"
+                "You specialize in instantly lifting a person’s spirits when they’re feeling sad, anxious, teary, stressed, numb, heartbroken, lonely, lost, or just low.\n\n"
+    "You offer :\n"
+    "- Simple pleasures (like a warm bubble shower, a cozy blanket with soft music, or watching a sunset)\n"
+    "- Cute fun activities backed by science (dog therapy, painting in the sun, journaling in pastel notebooks, dancing in your room)\n"
+    "- Meaningful intropecting  actions (talking with a parent, writing a letter to your future self, hugging your pet)\n"
+    "- Ancient Indian remedies and modern therapies (eg:aromatherapy, warm amla oil massage, ashwagandha milk)\n"
+    "- Comforting colors sugestion(pastel tones, calming blues/greens, mint or lavender nearby)\n"
+    "- plant-based rituals  and plants related surrounding change (hang a peace lily on the shower head)\n\n"
+    "Important:\n"
+    "- Always suggest a *specific* mood-boosting food item or recipie backed by science  \n"
+    "- Food suggestions should be comforting, emotionally healing, and scientifically known to help with mood or mental energy\n"
+    "- Keep responses short (2–3 lines), warm, creative, and emotionally grounding\n"
+    "- You are a spark of light — a pocket of warmth when the world feels too heavy."
+            )
+        },
+        {
+            "role": "user",
+            "content": user_prompt
+        }
+    ]
+
+    response = model.chat.completions.create(
+        messages=messages,
+        model="gemini-1.5-flash"
+    )
+
+    return response.choices[0].message.content
+
+# Gradio Interface
+with gr.Blocks(title="🌸 Gemini Pocket Therapist") as demo:
+    gr.Markdown("#The Cozy Therapist😊")
+    gr.Markdown("Tell me how you're feeling today, and let’s create a pocket of light just for you 💖")
+
+    with gr.Row():
+        lover = gr.Textbox(label="💖 What are you nature/music/pet /health lover?")
+        hobbies = gr.Textbox(label="🎨 hobbies u enjoy doing in your free time?")
+    with gr.Row():
+        fav_food = gr.Textbox(label="🍜 What do you love to eat (indian, chinese, italian or something else)?")
+        indoor_outdoor = gr.Textbox(label="🏡 Indoor or outdoor person?")
+    with gr.Row():
+        emotion = gr.Textbox(label="💭 How are you feeling right now sweetheart ?")
+        fav_flower = gr.Textbox(label="🌷any  Favorite flower or plant love?")
+
+    with gr.Row():
+        get_btn = gr.Button("✨ Get Your Cozy Suggestions")
+        reload_btn = gr.Button("🔄 Reload Suggestions")
+
+    output = gr.Textbox(label="🧠 Your Pocket Therapist Says:", lines=12)
+
+    # Store the last inputs to reuse for reload
+    state_inputs = gr.State([])
+
+    def handle_first_click(lover, hobbies, fav_food, indoor_outdoor, emotion, fav_flower):
+        result = get_therapy_response(lover, hobbies, fav_food, indoor_outdoor, emotion, fav_flower)
+        return result, [lover, hobbies, fav_food, indoor_outdoor, emotion, fav_flower]
+
+    def handle_reload(last_inputs):
+        if not last_inputs or len(last_inputs) != 6:
+            return "Please submit your preferences first!", last_inputs
+        return get_therapy_response(*last_inputs), last_inputs
+
+    get_btn.click(
+        fn=handle_first_click,
+        inputs=[lover, hobbies, fav_food, indoor_outdoor, emotion, fav_flower],
+        outputs=[output, state_inputs]
+    )
+
+    reload_btn.click(
+        fn=handle_reload,
+        inputs=[state_inputs],
+        outputs=[output, state_inputs]
+    )
+
+demo.launch()

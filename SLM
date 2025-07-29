@@ -1,0 +1,28 @@
+from transformers import AutoModelForCausalLM
+
+from transformers import AutoTokenizer
+
+import torch
+
+from huggingface_hub import login
+
+login("Hugging Face User Access Token secret ")
+
+model_id = "meta-llama/Llama-3.1-8B-Instruct"
+
+device = "cpu"
+
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+
+print(tokenizer)
+
+AutoModelForCausalLM.from_pretrained(model_id, task="text-generation")
+
+
+model= AutoModelForCausalLM.from_pretrained(
+    model_id,
+    torch_dtype=torch.float16 if device in ["cuda","cpu"] else torch.float32,
+    device_map={"": device},
+    use_auth_token=True
+)
+

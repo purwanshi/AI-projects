@@ -1,0 +1,86 @@
+import gradio as gr
+import requests
+from bs4 import BeautifulSoup
+
+# Function to scrape images from Google
+def get_fashion_images(occasion, gender):
+    headers = {"User-Agent": "Mozilla/5.0"}
+    query = f"{gender} outfit for {occasion}"
+    url = f"https://www.google.com/search?tbm=isch&q={query.replace(' ', '+')}"
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    image_tags = soup.find_all("img")
+    img_urls = [img['src'] for img in image_tags if 'src' in img.attrs]
+    return img_urls[1:7]  # Return top 6 images skipping icons
+
+# Fashion tip suggestions
+def get_fashion_tip(occasion, gender):
+    tips = {
+        "wedding": {
+            "Male": "Opt for a well-fitted sherwani or blazer with classic shoes.",
+            "Female": "Consider wearing a lehenga, saree, or a designer gown with ethnic jewelry."
+        },
+        "party": {
+            "Male": "Go for a smart-casual shirt with jeans and loafers.",
+            "Female": "Try a cocktail dress or jumpsuit with bold makeup."
+        },
+        "office": {
+            "Male": "Wear a formal shirt, trousers, and a blazer.",
+            "Female": "Try a formal blouse with pants or a pencil skirt, paired with minimal accessories."
+        },
+        "casual": {
+            "Male": "T-shirt with jeans and sneakers works well.",
+            "Female": "You can wear a cute top with denim or a floral dress."
+        }
+    }
+    occasion = occasion.lower()
+    return tips.get(occasion, {}).get(gender, "Choose comfortable and occasion-appropriate attire.")
+
+# Main function
+def fashion_chatbot(image_path, occasion, gender):
+    tip = get_fashion_tip(occasion, gender)
+    try:
+        images = get_fashion_images(occasion, gender)
+    except Exception as e:
+        images = []
+    return tip, images
+
+# Launch enhanced Gradio UI
+def launch_ui():
+    with gr.Blocks(theme=gr.themes.Soft(primary_hue="pink")) as demo:
+        gr.Markdown("""
+        <div style='text-align: center;'>
+            <h1>🌟 Fashion Genie: Your Style Assistant 🌟</h1>
+            <p style='font-size: 16px;'>Upload your photo, tell us the occasion, and we'll suggest the perfect outfit!</p>
+        </div>
+        """)
+
+        with gr.Tab("Get Suggestions"):
+            with gr.Row():
+                with gr.Column():
+                    photo_input = gr.Image(label="Upload Your Photo", type="filepath")
+                    occasion_input = gr.Textbox(label="Occasion", placeholder="e.g., wedding, party, office")
+                    gender_input = gr.Radio(choices=["Male", "Female"], label="Select Gender", value="Female")
+                    suggest_btn = gr.Button("🔮 Generate Style Recommendations")
+
+                with gr.Column():
+                    chatbot_output = gr.Textbox(label="🎀 Fashion Tip", lines=2, interactive=False)
+                    outfit_gallery = gr.Gallery(label="🌂 Outfit Suggestions", columns=3, height="auto")
+
+            suggest_btn.click(fn=fashion_chatbot, inputs=[photo_input, occasion_input, gender_input], outputs=[chatbot_output, outfit_gallery])
+
+        with gr.Tab("About"):
+            gr.Markdown("""
+            ### 👗 About Fashion Genie
+            This smart assistant uses image scraping and occasion-based fashion tips to give you suggestions on what to wear.
+
+            - Choose your gender and type of event
+            - Upload a photo (optional for now)
+            - See outfit inspirations and style tips
+
+            Created with Gradio, Python, and a bit of fashion flair 😉
+            """)
+
+    demo.launch()
+
+launch_ui()

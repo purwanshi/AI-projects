@@ -1,0 +1,63 @@
+from langchain_core.tools import tool
+from langchain.agents import initialize_agent, AgentType
+from langchain_google_genai import ChatGoogleGenerativeAI
+import os
+import re
+
+# Set API key
+os.environ["GOOGLE_API_KEY"] = "mG4ieFHRPfCt_GttF8"
+
+# Initialize Gemini LLM
+llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
+
+@tool
+def docker_file(description: str) -> str:
+    """
+    🐳 Create a Dockerfile based on natural language input.
+    
+    Expects a sentence containing:
+    - Base image (e.g., 'python:3.10')
+    - Workdir (e.g., '/app')
+    - Command (e.g., 'python app.py')
+    
+    Example: "Create a Dockerfile using python:3.10-slim with workdir /app and command python app.py"
+    """
+    try:
+        run_match = re.search(r"(?i)(?:base image|using|from)\s+([\\w:\\-.]+)", description)
+        workdir_match = re.search(r"(?i)workdir\s+([\\/\\w]+)", description)
+        cmd_match = re.search(r"(?i)(?:run|command)\s+(.+)", description)
+
+        if not (run_match and workdir_match and cmd_match):
+            return "❌ Could not extract all required fields (RUN, WORKDIR, CMD). Please be more specific."
+
+        RUN = run_match.group(1)
+        WORKDIR = workdir_match.group(1)
+        CMD = cmd_match.group(1)
+
+        dockerfile_content = f"""FROM {RUN}
+WORKDIR {WORKDIR}
+COPY . .
+CMD ["{CMD}"]
+"""
+        with open("Dockerfile", "w") as f:
+            f.write(dockerfile_content)
+
+        return f"✅ Dockerfile created successfully with base image {RUN}, workdir {WORKDIR}, and command `{CMD}`."
+
+    except Exception as e:
+        return f"❌ Error while creating Dockerfile: {str(e)}"
+
+# Tool registration
+tools = [docker_file]
+
+# Initialize the agent
+agent = initialize_agent(
+    tools=tools,
+    llm=llm,
+    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    verbose=True
+)
+
+# Example query
+response = agent.run("Create a Dockerfile using python:3.10-slim with workdir /app and command python app.py")
+print(response)

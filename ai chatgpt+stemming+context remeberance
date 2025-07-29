@@ -1,0 +1,55 @@
+ai context remember
+
+from openai import OpenAI
+google_gemini_api_key="*********************"
+
+myprompt=input("tell me about myself what is your name")
+tell me about myself my name is purwa
+
+mymsg=[
+    {
+    "role":"system","content":"You are a AI assistant"},
+    {"role":"user","content":myprompt}
+    
+]
+
+gemini_llm_model=OpenAI(
+    api_key=google_gemini_api_key,
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/")
+
+
+responce=gemini_llm_model.chat.completions.create(
+    messages=mymsg,
+    model="gemini-1.5-flash",
+    stream=True
+)
+data=" "
+
+for chunk in responce:
+    data +=chunk.choices[0].delta.content
+
+data
+" It's nice to meet you, purwa.  Is there anything I can help you with today?\n"
+
+
+def lw_streaming_app(myprompt):
+    mymsg=[
+    {
+    "role":"system","content":"You are a AI assistant"},
+    {"role":"user","content":myprompt}
+    
+   ]
+    responce=gemini_llm_model.chat.completions.create(
+    messages=mymsg,
+    model="gemini-1.5-flash",
+    stream=True
+   )
+    data=" "
+    for chunk in responce:
+         data +=chunk.choices[0].delta.content
+    return data
+    
+lw_streaming_app("tell me about streaming lights")
+    import gradio as gr
+
+    gr.Interface(fn=lw_streaming_app,inputs="text",outputs="text").launch()

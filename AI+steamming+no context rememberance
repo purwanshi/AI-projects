@@ -1,5 +1,5 @@
 from openai import OpenAI
-google_gemini_api_key="AIzaSyCum22SXyNGNMbBsEDNnEResZMGCgIWdHw"
+google_gemini_api_key="*************************"
 myprompt=input("tell me about myself what is your name")
 mymsg=[
     {
